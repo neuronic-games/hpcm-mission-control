@@ -19,7 +19,7 @@ export class LocalDynamicTracks extends Component {
       isMicOn: true,
       pushDown: false,
       showOverlay: false,
-      overlayTimeout: 10000,
+      overlayTimeout: 30000,
     };
     this.videoRef = React.createRef();
     this.micRef = React.createRef();
