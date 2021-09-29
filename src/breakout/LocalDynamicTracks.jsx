@@ -303,6 +303,10 @@ export class LocalDynamicTracks extends Component {
       });
       track?.mute();
       this.userInactive();
+      window?.libjisti?.activeRoom?.setLocalParticipantProperty(
+        "pushDown",
+        "false"
+      );
     });
   };
 
@@ -314,6 +318,10 @@ export class LocalDynamicTracks extends Component {
       });
       track?.unmute();
       this.userInactive();
+      window?.libjisti?.activeRoom?.setLocalParticipantProperty(
+        "pushDown",
+        "true"
+      );
     });
   };
 

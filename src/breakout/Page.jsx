@@ -36,6 +36,8 @@ export class Page extends Component {
       userName: this.props.match.params.name,
       muteSource: null,
       userChangeId: null,
+      pushDown: false,
+      pushedUser: null,
     };
 
     window.libjisti = {};
@@ -62,22 +64,26 @@ export class Page extends Component {
         (_.find(newDeviceList, { type: "audioinput" }) || {}).id || "none";
       let speakerId =
         (_.find(newDeviceList, { type: "audiooutput" }) || {}).id || "none";
-
       /*** If cam parameter present in querystring '?cam=1' then select the camera accordingly [[ ****/
       let videoId = "none";
-      let videoInputs = _.filter(newDeviceList, function (o) { return o.type == "videoinput"; });
-      let queryStringValues = queryString.parse(this.props.location.search) || {};
+      let videoInputs = _.filter(newDeviceList, function (o) {
+        return o.type == "videoinput";
+      });
+      let queryStringValues =
+        queryString.parse(this.props.location.search) || {};
       let defaultCamera = 1;
       if (!_.isEmpty(queryStringValues)) {
         defaultCamera = parseInt(queryStringValues.cam) || defaultCamera;
       }
-      if ((videoInputs.length > 0) && (defaultCamera > 0)) {
-        videoId = (!_.isUndefined(videoInputs[defaultCamera - 1])) ? videoInputs[defaultCamera - 1].id : videoInputs[0].id;
+      if (videoInputs.length > 0 && defaultCamera > 0) {
+        videoId = !_.isUndefined(videoInputs[defaultCamera - 1])
+          ? videoInputs[defaultCamera - 1].id
+          : videoInputs[0].id;
       }
       /**************** ]] ************* */
 
       /** If room parameter present in querystring '?room=hga2324Test' then set that room else default [[ */
-      let defaultRoomId = queryStringValues.room || "3224fhsahfa3fal086test"
+      let defaultRoomId = queryStringValues.room || "3224fhsahfa3fal086test";
       defaultRoomId = defaultRoomId.toLowerCase();
       /**************** ]] ************* */
       this.setState({
@@ -209,10 +215,15 @@ export class Page extends Component {
   };
 
   onParticipantPropertyChange = (user, key, oldValue, value) => {
+    console.log({ user, key, oldValue, value });
     if (key == "muteSource" && value == "true") {
       this.setState({ muteSource: true, userChangeId: user._id });
     } else if (key == "muteSource" && value == "false") {
       this.setState({ muteSource: false });
+    } else if (key == "pushDown" && value == "true") {
+      this.setState({ pushDown: true, pushedUser: user._id });
+    } else if (key == "pushDown" && value == "false") {
+      this.setState({ pushDown: false });
     } else {
       this.setState({ muteSource: null });
     }
@@ -382,6 +393,8 @@ export class Page extends Component {
               muteSource={this.state.muteSource}
               userChangeId={this.state.userChangeId}
               users={window?.libjisti?.activeRoom?.getParticipants()}
+              pushDown={this.state.pushDown}
+              pushedUser={this.state.pushedUser}
             />
           </div>
         </div>

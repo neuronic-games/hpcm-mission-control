@@ -211,15 +211,51 @@ export class RemoteTrack extends Component {
         >
           {this.props.name}
         </div>
-        {this.props.userChangeId !== this.props.id &&
+        {/* {this.props.userChangeId !== this.props.id &&
         this.props.muteSource === true ? (
           <img
-            style={{ position: "absolute", top: "5px", right: "5px" }}
+            style={{
+              position: "absolute",
+              top: "5px",
+              right: "5px",
+              display:
+                this.props.pushDown === true &&
+                this.props.pushedUser === this.props.id
+                  ? "none"
+                  : "",
+            }}
             src={Mute}
             alt="Mute"
             width="25px"
           />
-        ) : null}
+        ) : null} */}
+
+        <img
+          style={{
+            position: "absolute",
+            top: "5px",
+            right: "5px",
+            display:
+              this.props.pushDown === true &&
+              this.props.pushedUser === this.props.id
+                ? "none"
+                : "",
+          }}
+          src={Mute}
+          alt="Mute"
+          width="60px"
+        />
+
+        {/* {this.props.muteSource !== true ||
+        (this.props.pushDown === true &&
+          this.props.pushedUser === this.props.id) ? null : (
+            <img
+              style={{ position: "absolute", top: "5px", right: "5px" }}
+              src={Mute}
+              alt="mute"
+              width="60px"
+            />
+          )} */}
       </>
     );
   }
