@@ -318,7 +318,7 @@ export class LocalDynamicTracks extends Component {
   };
 
   userInactive = () => {
-    this.setState({ showOverlay: false, overlayTimeout: 10000 }, () => {
+    this.setState({ showOverlay: false, overlayTimeout: 30000 }, () => {
       if (!this.state.pushDown) {
         setTimeout(
           () => this.setState({ showOverlay: true }),
