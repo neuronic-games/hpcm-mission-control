@@ -88,7 +88,7 @@ export class LocalDynamicTracks extends Component {
       devices: ["audio", "video"],
       constraints: constraints,
     };
-    if (defaultVideoId !=="none"){
+    if (defaultVideoId !== "none") {
       localTracksConfig.cameraDeviceId = defaultVideoId;
     }
     window.JitsiMeetJS.createLocalTracks(localTracksConfig).then((tracks) => {
@@ -318,7 +318,7 @@ export class LocalDynamicTracks extends Component {
   };
 
   userInactive = () => {
-    this.setState({ showOverlay: false, overlayTimeout: 10000 }, () => {
+    this.setState({ showOverlay: false, overlayTimeout: 30000 }, () => {
       if (!this.state.pushDown) {
         setTimeout(
           () => this.setState({ showOverlay: true }),
