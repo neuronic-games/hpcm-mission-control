@@ -246,6 +246,17 @@ export class RemoteTrack extends Component {
           width="60px"
         />
 
+        {this.props.pushDown === true &&
+        this.props.pushedUser === this.props.id ? (
+          <div id="bars">
+            <div className="bar"></div>
+            <div className="bar"></div>
+            <div className="bar"></div>
+            <div className="bar"></div>
+            <div className="bar"></div>
+          </div>
+        ) : null}
+
         {/* {this.props.muteSource !== true ||
         (this.props.pushDown === true &&
           this.props.pushedUser === this.props.id) ? null : (
