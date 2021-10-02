@@ -26,6 +26,7 @@ export class RemoteTrack extends Component {
     this.tracks = _.filter(window.libjisti.remoteTracks, (rt) => {
       return _.indexOf(trackIds, rt.id) !== -1;
     });
+    console.log(this.tracks, "thetracks");
     let videoTrack = _.find(this.tracks, { type: "video" });
     let micTrack = _.find(this.tracks, { type: "audio" });
     if (videoTrack || micTrack) {
@@ -174,6 +175,14 @@ export class RemoteTrack extends Component {
     }
   };
 
+  muteRemote = () => {
+    this.micRef.current.muted == true
+      ? (this.micRef.current.muted = false)
+      : this.micRef.current.muted == false
+      ? (this.micRef.current.muted = true)
+      : null;
+  };
+
   render() {
     if (this.micRef.current && this.props.speakerMuted === true) {
       this.micRef.current.muted = true;
@@ -231,6 +240,7 @@ export class RemoteTrack extends Component {
         ) : null} */}
 
         <img
+          onClick={this.muteRemote}
           style={{
             position: "absolute",
             top: "5px",
@@ -248,7 +258,7 @@ export class RemoteTrack extends Component {
 
         {this.props.pushDown === true &&
         this.props.pushedUser === this.props.id ? (
-          <div id="bars">
+          <div onClick={this.muteRemote} id="bars">
             <div className="bar"></div>
             <div className="bar"></div>
             <div className="bar"></div>

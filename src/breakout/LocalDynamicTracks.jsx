@@ -109,6 +109,7 @@ export class LocalDynamicTracks extends Component {
             (_.find(newDeviceList, { type: "videoinput" }) || {}).id || "none";
           let speakerId =
             (_.find(newDeviceList, { type: "audiooutput" }) || {}).id || "none";
+          console.log({ micId, videoId, speakerId }, "deviceid");
 
           let deviceIds = _.map(newDeviceList, (nd) => nd.id);
           for (let track of tracks) {
@@ -134,6 +135,7 @@ export class LocalDynamicTracks extends Component {
         });
       } else {
         let deviceIds = _.map(deviceList, (nd) => nd.id);
+        console.log(defaultSpeakerId, defaultMicId, "deviceid");
         for (let track of tracks) {
           if (_.indexOf(deviceIds, track.deviceId) !== -1) {
             this.trackList.push(track);
@@ -301,6 +303,14 @@ export class LocalDynamicTracks extends Component {
       let track = _.find(this.trackList, (t) => {
         return t.deviceId === selectedMicDeviceId;
       });
+      console.log(
+        {
+          track,
+          libtrack: window.libjisti.remoteTracks[1],
+          thistrack: this.trackList,
+        },
+        "thetracks"
+      );
       track?.mute();
       this.userInactive();
       window?.libjisti?.activeRoom?.setLocalParticipantProperty(

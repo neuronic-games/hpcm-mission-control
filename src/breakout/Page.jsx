@@ -64,6 +64,7 @@ export class Page extends Component {
         (_.find(newDeviceList, { type: "audioinput" }) || {}).id || "none";
       let speakerId =
         (_.find(newDeviceList, { type: "audiooutput" }) || {}).id || "none";
+      // console.log(speakerId, "deviceid");
       /*** If cam parameter present in querystring '?cam=1' then select the camera accordingly [[ ****/
       let videoId = "none";
       let videoInputs = _.filter(newDeviceList, function (o) {
@@ -405,7 +406,7 @@ export class Page extends Component {
     return ret;
   };
 
-  muteSpeaker = () => {
+  muteSpeaker = (id) => {
     this.setState({ speakerMuted: true });
   };
 
@@ -418,6 +419,7 @@ export class Page extends Component {
       layout,
       selectedSpeakerDeviceId,
       defaultMicId,
+      defaultSpeakerId,
       defaultVideoId,
       deviceList,
       loaded = false,
@@ -475,6 +477,7 @@ export class Page extends Component {
                   activeRoomId={activeRoomId}
                   deviceList={deviceList}
                   defaultMicId={defaultMicId}
+                  defaultSpeakerId={defaultSpeakerId}
                   defaultVideoId={defaultVideoId}
                   key="localTracks"
                   muteSpeaker={this.muteSpeaker}
