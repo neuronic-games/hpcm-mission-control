@@ -108,6 +108,12 @@
   animation: sound 0ms -600ms linear infinite alternate;
 }
 
+.flipped {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg); /* Safari and Chrome */
+  -moz-transform: rotateY(180deg); /* Firefox */
+}
+
 @keyframes sound {
   0% {
     opacity: 0.35;

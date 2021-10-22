@@ -19,7 +19,8 @@ export class LocalDynamicTracks extends Component {
       isMicOn: true,
       pushDown: false,
       showOverlay: false,
-      overlayTimeout: 30000,
+      timeout: null,
+      devicesModal: 0,
     };
     this.videoRef = React.createRef();
     this.micRef = React.createRef();
@@ -36,22 +37,29 @@ export class LocalDynamicTracks extends Component {
       name,
     } = this.props;
 
-    setTimeout(
-      () => this.setState({ showOverlay: true }),
-      this.state.overlayTimeout
-    );
+    setTimeout(() => this.setState({ showOverlay: true }), 30000);
 
     const spaceClick = (e) => {
-      if (e.code === "Space" && this.props.muteSource !== true) {
+      if (
+        e.code === "Space" &&
+        this.props.muteSource !== true &&
+        this.props.muteRemoteUser !== "true"
+      ) {
         this.unmuteMic();
-      } else if (e.code === "KeyS" && this.props.muteSource !== true) {
+      } else if (
+        e.code === "KeyS" &&
+        this.props.muteSource !== true &&
+        this.props.muteRemoteUser !== "true"
+      ) {
         this.unmuteMic();
         this.props.muteSpeaker();
-      } else if (e.code === "KeyM") {
+      } else if (e.code === "KeyM" && this.props.muteRemoteUser !== "true") {
         this.unmuteMic();
         // this.props.muteSpeaker();
         this.muteSource();
         // this.userInactive();
+      } else if (e.code === "F3") {
+        this.setState({ devicesModal: !this.state.devicesModal });
       } else {
         return;
       }
@@ -91,8 +99,11 @@ export class LocalDynamicTracks extends Component {
     if (defaultVideoId !== "none") {
       localTracksConfig.cameraDeviceId = defaultVideoId;
     }
+    if (defaultMicId !== "none") {
+      localTracksConfig.micDeviceId = defaultMicId;
+    }
     window.JitsiMeetJS.createLocalTracks(localTracksConfig).then((tracks) => {
-      console.log(tracks, "papatracks");
+      // console.log({ deviceList, tracks }, "default");
       if (defaultMicId == "none" || defaultVideoId == "none") {
         window.JitsiMeetJS.mediaDevices.enumerateDevices((devices) => {
           let newDeviceList = [];
@@ -139,7 +150,6 @@ export class LocalDynamicTracks extends Component {
             this.trackList.push(track);
           }
         }
-
         this.setState(
           {
             loaded: true,
@@ -151,53 +161,69 @@ export class LocalDynamicTracks extends Component {
           () => {
             this.updateLocalTrack(defaultMicId, "set");
             this.updateLocalTrack(defaultVideoId, "set");
-            this.updateLocalTrack(defaultSpeakerId, "set");
-            this.onJoin();
+            this.onJoin(defaultSpeakerId);
           }
         );
       }
     });
+    // this.changeSpeaker(defaultSpeakerId);
   }
 
   updateLocalTrack = (deviceId, action = "clear", isPopUp = false) => {
+    let trackType =
+      _.find(this.state.deviceList, { id: deviceId })?.type || null;
+    let track = _.find(this.trackList, (track) =>
+      trackType?.includes(track?.getType())
+    );
     if (action === "clear") {
-      let clearTrack = _.find(this.trackList, { deviceId: deviceId });
-      if (clearTrack) {
+      // let clearTrack = _.find(this.trackList, { deviceId: deviceId });
+      if (track) {
         // eslint-disable-next-line default-case
-        switch (clearTrack.getType()) {
+        switch (track.getType()) {
           case "audio":
             if (this.micRef.current) {
-              clearTrack.detach(this.micRef.current);
-              clearTrack.dispose();
+              track.detach(this.micRef.current);
+              track.dispose();
             }
             break;
           case "video":
             if (this.videoRef.current) {
-              clearTrack.detach(this.videoRef.current);
-              clearTrack.dispose();
+              track.detach(this.videoRef.current);
+              track.dispose();
             }
             break;
         }
       }
     } else if (action === "set") {
-      let setTrack = _.find(this.trackList, (t) => {
-        return t.deviceId === deviceId;
-      });
-      if (setTrack) {
-        setTrack.is;
+      // let setTrack = _.find(this.trackList, (t) => {
+      //   return t.deviceId === deviceId;
+      // // });
+      // console.log(
+      //   track,
+      //   deviceId,
+      //   _.find(this.state.deviceList, { id: deviceId }).name
+      // );
+      if (track) {
+        track.is;
         // eslint-disable-next-line default-case
-        switch (setTrack.getType()) {
+        switch (track.getType()) {
           case "audio":
+            // if (trackType == "audiooutput") {
+            //   track.setAudioOutput(deviceId);
+            //   console.log(track, deviceId, "changeaudio");
+            //   return;
+            // }
+
             if (this.micRef.current) {
-              setTrack.attach(this.micRef.current);
+              track.attach(this.micRef.current);
             }
             break;
           case "video":
-            if (setTrack && this.videoRef.current) {
+            if (track && this.videoRef.current) {
               if (isPopUp) {
-                setTrack.attach(this.videoPopUpRef.current);
+                track.attach(this.videoPopUpRef.current);
               }
-              setTrack.attach(this.videoRef.current);
+              track.attach(this.videoRef.current);
             }
             break;
         }
@@ -212,6 +238,21 @@ export class LocalDynamicTracks extends Component {
       prevState,
       ""
     );
+
+    if (this.props.muteRemoteUser !== prevProps.muteRemoteUser) {
+      console.log(this.props.muteRemoteUser, 239);
+      this.props.muteRemoteUser == "true"
+        ? this.muteTrack()
+        : this.props.muteRemoteUser == "false"
+        ? this.unmuteTrack()
+        : console.log("else");
+    }
+
+    // if (this.props.muteSource !== prevProps.muteSource) {
+    //   this.muteTrack();
+    // } else {
+    //   console.log("equal", this.props.muteSource, prevProps.muteSource);
+    // }
 
     // if (prevProps.muteSource !== this.props.muteSource) {
     //   if (this.props.muteSource === true) {
@@ -280,6 +321,7 @@ export class LocalDynamicTracks extends Component {
         }
       }
     }
+    this.changeSpeaker(this.state.selectedSpeakerDeviceId);
   }
 
   componentWillUnmount() {
@@ -295,14 +337,50 @@ export class LocalDynamicTracks extends Component {
     );
   };
 
+  changeSpeaker = (id) => {
+    // this.setState({ selectedSpeakerDeviceId: id });
+    JitsiMeetJS.mediaDevices.setAudioOutputDevice(id);
+  };
+
+  changeMic = (id) => {
+    const audioTrack = this.trackList[0];
+    window.JitsiMeetJS.createLocalTracks({
+      devices: ["audio"],
+      micDeviceId: id,
+    }).then((tracks) => {
+      this.setState({ selectedMicDeviceId: id });
+      const newTrack = tracks[0];
+      newTrack.attach(this.micRef.current);
+      window.libjisti.activeRoom.replaceTrack(audioTrack, newTrack);
+      newTrack.mute();
+      this.trackList[0] = newTrack;
+    });
+  };
+
+  changeVideo = (id) => {
+    const videoTrack = this.trackList[1];
+    window.JitsiMeetJS.createLocalTracks({
+      devices: ["video"],
+      cameraDeviceId: id,
+    }).then((tracks) => {
+      // this.setState({ selectedVideoDeviceId: id });
+      const newTrack = tracks[0];
+      newTrack.attach(this.videoRef.current);
+      window.libjisti.activeRoom.replaceTrack(videoTrack, newTrack);
+      this.trackList[1] = newTrack;
+    });
+  };
+
   muteMic = () => {
     const { selectedMicDeviceId, isMicOn } = this.state;
     this.setState({ pushDown: false, isMicOn: !isMicOn }, () => {
-      let track = _.find(this.trackList, (t) => {
-        return t.deviceId === selectedMicDeviceId;
-      });
+      // let track = _.find(this.trackList, (t) => {
+      //   return t.deviceId === selectedMicDeviceId;
+      // });
+      const track = this.trackList[0];
       track?.mute();
-      this.userInactive();
+      // this.muteTrack();
+      this.resetTimer();
       window?.libjisti?.activeRoom?.setLocalParticipantProperty(
         "pushDown",
         "false"
@@ -310,13 +388,29 @@ export class LocalDynamicTracks extends Component {
     });
   };
 
+  muteTrack = () => {
+    const track = this.trackList[0];
+    track?.mute();
+    console.log(track, 384);
+  };
+  unmuteTrack = () => {
+    const track = this.trackList[0];
+    if (this.state.pushDown && this.props.muteRemoteUser !== "false") {
+      track?.unmute();
+    }
+
+    console.log(track, 389);
+  };
+
   unmuteMic = () => {
     const { selectedMicDeviceId, isMicOn } = this.state;
     this.setState({ pushDown: true, isMicOn: !isMicOn }, () => {
-      let track = _.find(this.trackList, (t) => {
-        return t.deviceId === selectedMicDeviceId;
-      });
+      // let track = _.find(this.trackList, (t) => {
+      //   return t.deviceId === selectedMicDeviceId;
+      // });
+      const track = this.trackList[0];
       track?.unmute();
+      // this.unmuteTrack();
       this.userInactive();
       window?.libjisti?.activeRoom?.setLocalParticipantProperty(
         "pushDown",
@@ -326,13 +420,18 @@ export class LocalDynamicTracks extends Component {
   };
 
   userInactive = () => {
-    this.setState({ showOverlay: false, overlayTimeout: 30000 }, () => {
-      if (!this.state.pushDown) {
-        setTimeout(
-          () => this.setState({ showOverlay: true }),
-          this.state.overlayTimeout
-        );
-      }
+    this.setState({ showOverlay: false });
+  };
+
+  userActive = () => {
+    this.setState({ showOverlay: true });
+  };
+
+  resetTimer = () => {
+    const { timeout } = this.state;
+    clearTimeout(timeout);
+    this.setState({
+      timeout: setTimeout(() => this.setState({ showOverlay: true }), 30000),
     });
   };
 
@@ -493,7 +592,7 @@ export class LocalDynamicTracks extends Component {
     });
   };
 
-  onJoin = () => {
+  onJoin = (defaultSpeakerId) => {
     this.props.onConnect();
     let track = _.find(this.trackList, (t) => {
       return t.deviceId === this.state.selectedMicDeviceId;
@@ -528,13 +627,17 @@ export class LocalDynamicTracks extends Component {
           }}
         >
           <div
-            onMouseDown={this.unmuteMic}
+            onMouseDown={
+              this.props.muteSource !== true &&
+              this.props.muteRemoteUser !== "true" &&
+              this.unmuteMic
+            }
             onMouseUp={this.muteMic}
             className="position-relative overflow-hidden"
             style={{ height: "100%", margin: "auto", aspectRatio: "16 / 9" }}
           >
             <video
-              className="local-video d-flex"
+              className="local-video flipped d-flex"
               autoPlay="1"
               ref={this.videoRef}
               style={{
@@ -545,9 +648,30 @@ export class LocalDynamicTracks extends Component {
               }}
             />
             <audio autoPlay="1" muted={true} ref={this.micRef} />
+            <div
+              className="justify-content-center align-items-center"
+              style={{
+                display: this.props.muteRemoteUser == "true" ? "flex" : "none",
+                position: "absolute",
+                inset: 0,
+                backgroundColor: "rgba(255,0,0,0.6)",
+                height: "100%",
+                width: "100%",
+                objectFit: "cover",
+                border: "2px solid #ACACAC",
+                borderRadius: "20px",
+                color: "white",
+                fontSize: "24px",
+                fontWeight: "semibold",
+              }}
+            >
+              MUTED
+            </div>
 
             <div
-              className="video_overlay d-flex justify-content-center align-items-center"
+              className={`video_overlay justify-content-center align-items-center ${
+                this.props.muteRemoteUser == "true" ? "d-none" : "d-flex"
+              }`}
               style={{
                 width: "100%",
                 height: "100%",
@@ -602,6 +726,25 @@ export class LocalDynamicTracks extends Component {
                   )}
                 </select>
               </div> */}
+
+              {/* <div>
+                <select
+                  value={this.state.selectedSpeakerDeviceId}
+                  onChange={this.onSpeakerChange}
+                  className="nav-item"
+                >
+                  {_.map(
+                    _.filter(deviceList, { type: "audiooutput" }),
+                    (d, index) => {
+                      return (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      );
+                    }
+                  )}
+                </select>
+              </div> */}
             </div>
 
             {/* screen share icon */}
@@ -619,7 +762,7 @@ export class LocalDynamicTracks extends Component {
               <img src={ScreenShare} alt="share-screen" />
             </div> */}
 
-            {this.state.pushDown ? (
+            {this.state.pushDown && this.props.muteRemoteUser !== "true" ? (
               <div id="bars">
                 <div className="bar"></div>
                 <div className="bar"></div>
@@ -638,6 +781,77 @@ export class LocalDynamicTracks extends Component {
             ) : null}
           </div>
         </div>
+        {this.state.devicesModal ? (
+          <div
+            style={{ left: 0, backgroundColor: "#0000007a" }}
+            className="d-flex deviceModal justify-content-center align-items-center fixed-top w-100 h-100"
+          >
+            <div className="card w-50 h-75 position-absolute">
+              <div className="container overflow-auto">
+                <div className="col mb-4 mt-4">
+                  <h3>Audio Output</h3>
+                  {_.map(
+                    _.filter(deviceList, { type: "audiooutput" }),
+                    (d, index) => {
+                      return (
+                        <div
+                          style={{
+                            color:
+                              this.state.selectedSpeakerDeviceId == d.id &&
+                              "#eb7800",
+                          }}
+                          key={d.id}
+                        >
+                          {index + 1}.{d.name}
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+                <div className="col mb-4">
+                  <h3>Audio Input</h3>
+                  {_.map(
+                    _.filter(deviceList, { type: "audioinput" }),
+                    (d, index) => {
+                      return (
+                        <div
+                          style={{
+                            color:
+                              this.state.selectedMicDeviceId == d.id &&
+                              "#eb7800",
+                          }}
+                          key={d.id}
+                        >
+                          {index + 1}.{d.name}
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+                <div className="col mb-4">
+                  <h3>Video Input</h3>
+                  {_.map(
+                    _.filter(deviceList, { type: "videoinput" }),
+                    (d, index) => {
+                      return (
+                        <div
+                          style={{
+                            color:
+                              this.state.selectedVideoDeviceId == d.id &&
+                              "#eb7800",
+                          }}
+                          key={d.id}
+                        >
+                          {index + 1}.{d.name}
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </>
     );
   }

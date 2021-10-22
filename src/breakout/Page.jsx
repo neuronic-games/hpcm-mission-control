@@ -38,6 +38,8 @@ export class Page extends Component {
       userChangeId: null,
       pushDown: false,
       pushedUser: null,
+      muteRemoteUser: null,
+      muteRemoteUserId: {},
     };
 
     window.libjisti = {};
@@ -60,25 +62,53 @@ export class Page extends Component {
           type: device.kind,
         });
       }
-      let micId =
-        (_.find(newDeviceList, { type: "audioinput" }) || {}).id || "none";
-      let speakerId =
-        (_.find(newDeviceList, { type: "audiooutput" }) || {}).id || "none";
+      // let micId =
+      //   (_.find(newDeviceList, { type: "audioinput" }) || {}).id || "none";
+      // let speakerId =
+      //   (_.find(newDeviceList, { type: "audiooutput" }) || {}).id || "none";
+      // console.log({ speakerId, micId });
+      // console.log(newDeviceList, "all devices");
       /*** If cam parameter present in querystring '?cam=1' then select the camera accordingly [[ ****/
       let videoId = "none";
+      let micId = "none";
+      let speakerId = "none";
+
       let videoInputs = _.filter(newDeviceList, function (o) {
         return o.type == "videoinput";
       });
+      let micInputs = _.filter(newDeviceList, function (o) {
+        return o.type == "audioinput";
+      });
+      let speakerOutputs = _.filter(newDeviceList, function (o) {
+        return o.type == "audiooutput";
+      });
+
       let queryStringValues =
         queryString.parse(this.props.location.search) || {};
+
       let defaultCamera = 1;
+      let defaultMic = 1;
+      let defaultSpeaker = 1;
+
       if (!_.isEmpty(queryStringValues)) {
         defaultCamera = parseInt(queryStringValues.cam) || defaultCamera;
+        defaultMic = parseInt(queryStringValues.mic) || defaultMic;
+        defaultSpeaker = parseInt(queryStringValues.sound) || defaultSpeaker;
       }
       if (videoInputs.length > 0 && defaultCamera > 0) {
         videoId = !_.isUndefined(videoInputs[defaultCamera - 1])
           ? videoInputs[defaultCamera - 1].id
           : videoInputs[0].id;
+      }
+      if (micInputs.length > 0 && defaultMic > 0) {
+        micId = !_.isUndefined(micInputs[defaultMic - 1])
+          ? micInputs[defaultMic - 1].id
+          : micInputs[0].id;
+      }
+      if (speakerOutputs.length > 0 && defaultSpeaker > 0) {
+        speakerId = !_.isUndefined(speakerOutputs[defaultSpeaker - 1])
+          ? speakerOutputs[defaultSpeaker - 1].id
+          : speakerOutputs[0].id;
       }
       /**************** ]] ************* */
 
@@ -175,7 +205,7 @@ export class Page extends Component {
     window.libjisti.remoteTracks.push(trackInfo);
     this.setState({
       remoteTrackIds: _.map(window.libjisti.remoteTracks, (rt) => {
-        console.log(rt.id, "log2");
+        // console.log(rt.id, "log2");
         return {
           id: rt.id,
           participantId: rt.participantId,
@@ -201,7 +231,7 @@ export class Page extends Component {
   };
 
   onConferenceJoined = () => {
-    if (window.libjisti.activeRoom.getParticipants().length > 4) {
+    if (window.libjisti.activeRoom.getParticipants().length > 3) {
       window.libjisti.activeRoom.leave().then(() => {
         if (window.libjisti.activeConnection) {
           window.libjisti.activeConnection.disconnect();
@@ -212,10 +242,14 @@ export class Page extends Component {
         });
       });
     }
+    if (window?.libjisti?.activeRoom?.getParticipants().length < 1) {
+      window?.libjisti?.activeRoom?.setDisplayName("moderator");
+    }
   };
 
   onParticipantPropertyChange = (user, key, oldValue, value) => {
-    console.log({ user, key, oldValue, value });
+    const myUserId = window?.libjisti?.activeRoom?.myUserId();
+    // console.log({ user, key, oldValue, value });
     if (key == "muteSource" && value == "true") {
       this.setState({ muteSource: true, userChangeId: user._id });
     } else if (key == "muteSource" && value == "false") {
@@ -224,8 +258,33 @@ export class Page extends Component {
       this.setState({ pushDown: true, pushedUser: user._id });
     } else if (key == "pushDown" && value == "false") {
       this.setState({ pushDown: false });
+    } else if (key == myUserId) {
+      console.log("sameuser", { user, key, myUserId, oldValue, value });
+      this.setState((prevState) => ({
+        muteRemoteUser: value,
+        muteRemoteUserId: {
+          ...prevState.muteRemoteUserId,
+          [key]: value,
+        },
+      }));
+    } else if (key.length == 8) {
+      this.setState((prevState) => ({
+        muteRemoteUserId: {
+          ...prevState.muteRemoteUserId,
+          [key]: value,
+        },
+      }));
+      // this.setState({ muteRemoteUserId: key });
     } else {
-      this.setState({ muteSource: null });
+      /*else if (key == myUserId && value == "muteRemote") {
+      this.setState({ muteSourceIndivisual: true });
+      console.log("sameuser", key, myUserId, value);
+    } else if (key == myUserId && value == "unmuteRemote") {
+      this.setState({ muteSourceIndivisual: false });
+      console.log("sameuser", key, myUserId, value);
+    }*/
+      console.log({ user, key, myUserId, oldValue, value }, "page jsx 270");
+      // this.setState({ muteSource: null });
     }
   };
 
@@ -395,6 +454,8 @@ export class Page extends Component {
               users={window?.libjisti?.activeRoom?.getParticipants()}
               pushDown={this.state.pushDown}
               pushedUser={this.state.pushedUser}
+              muteRemoteUser={this.state.muteRemoteUser}
+              muteRemoteUserId={this.state.muteRemoteUserId}
             />
           </div>
         </div>
@@ -417,6 +478,7 @@ export class Page extends Component {
     const {
       layout,
       selectedSpeakerDeviceId,
+      defaultSpeakerId,
       defaultMicId,
       defaultVideoId,
       deviceList,
@@ -476,10 +538,13 @@ export class Page extends Component {
                   deviceList={deviceList}
                   defaultMicId={defaultMicId}
                   defaultVideoId={defaultVideoId}
+                  defaultSpeakerId={defaultSpeakerId}
                   key="localTracks"
                   muteSpeaker={this.muteSpeaker}
                   unmuteSpeaker={this.unmuteSpeaker}
                   muteSource={this.state.muteSource}
+                  muteRemoteUser={this.state.muteRemoteUser}
+                  muteRemoteUserId={this.state.muteRemoteUserId}
                 />
                 {this.renderTracks(remoteTrackGroups, selectedSpeakerDeviceId)}
                 <div className="page-ex1"></div>

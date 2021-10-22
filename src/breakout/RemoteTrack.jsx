@@ -14,6 +14,7 @@ export class RemoteTrack extends Component {
       name: "",
       isMuted: "",
       isUserMuted: [],
+      remoteMuted: false,
     };
     this.videoRef = React.createRef();
     this.micRef = React.createRef();
@@ -70,19 +71,19 @@ export class RemoteTrack extends Component {
       let micTrack = _.find(this.tracks, { type: "audio" });
       let newState = {};
       if (videoTrack) {
-        console.log(videoTrack, "log2remote");
+        // console.log(videoTrack, "log2remote");
         const { selectedVideoId } = this.state;
         if (/*videoTrack.id !== selectedVideoId*/ 2 > 1) {
           let oldVideoTrack = _.find(this.tracks, { id: selectedVideoId });
           if (oldVideoTrack) {
-            console.log(oldVideoTrack, "log2remote");
+            // console.log(oldVideoTrack, "log2remote");
             this.updateTrack(oldVideoTrack, "clear");
           }
           this.updateTrack(videoTrack, "set");
           newState.selectedVideoId = videoTrack.id;
-          console.log("log2remote");
+          // console.log("log2remote");
         }
-        console.log({ id: videoTrack.id, selectedVideoId }, "log2remote");
+        // console.log({ id: videoTrack.id, selectedVideoId }, "log2remote");
       }
       if (micTrack) {
         const { selectedMicId } = this.state;
@@ -136,6 +137,59 @@ export class RemoteTrack extends Component {
     }
   }
 
+  // muteRemote = () => {
+  //   this.micRef.current.muted == true
+  //     ? this.setState(
+  //         { remoteMuted: false },
+  //         () => (this.micRef.current.muted = false)
+  //       )
+  //     : this.setState(
+  //         { remoteMuted: true },
+  //         () => (this.micRef.current.muted = true)
+  //       );
+  // };
+
+  muteRemoteSource = () => {
+    const myUserId = window?.libjisti?.activeRoom?.myUserId();
+    const participantProperty = _.find(
+      window.libjisti.activeRoom.getParticipants(),
+      {
+        _displayName: "moderator",
+      }
+    );
+
+    if (_.isUndefined(participantProperty)) {
+      this.setState({ remoteMuted: true }, () => {
+        window?.libjisti?.activeRoom?.setLocalParticipantProperty(
+          this.props.id,
+          "true"
+        );
+      });
+    } else {
+      console.log(participantProperty);
+    }
+  };
+  unmuteRemoteSource = () => {
+    const myUserId = window?.libjisti?.activeRoom?.myUserId();
+    const participantProperty = _.find(
+      window.libjisti.activeRoom.getParticipants(),
+      {
+        _displayName: "moderator",
+      }
+    );
+
+    if (_.isUndefined(participantProperty)) {
+      this.setState({ remoteMuted: false }, () => {
+        window?.libjisti?.activeRoom?.setLocalParticipantProperty(
+          this.props.id,
+          "false"
+        );
+      });
+    } else {
+      console.log(participantProperty);
+    }
+  };
+
   updateTrack = (track, action = "clear") => {
     if (action === "clear") {
       if (track) {
@@ -154,7 +208,7 @@ export class RemoteTrack extends Component {
         }
       }
     } else if (action === "set") {
-      console.log(action, "log2remote");
+      // console.log(action, "log2remote");
       if (track) {
         // eslint-disable-next-line default-case
         switch (track.type) {
@@ -165,13 +219,17 @@ export class RemoteTrack extends Component {
             break;
           case "video":
             if (this.videoRef.current) {
-              console.log("it will work ", "log3");
+              // console.log("it will work ", "log3");
               track.track.attach(this.videoRef.current);
             }
             break;
         }
       }
     }
+  };
+
+  test = () => {
+    console.log(this.props.muteRemoteUserId[this.props.id]);
   };
 
   render() {
@@ -186,7 +244,8 @@ export class RemoteTrack extends Component {
     return (
       <>
         <video
-          className="d-flex"
+          onClick={this.muteRemoteSource}
+          className="d-flex flipped"
           autoPlay="1"
           ref={this.videoRef}
           style={{
@@ -198,6 +257,31 @@ export class RemoteTrack extends Component {
             borderRadius: "20px",
           }}
         />
+        <div
+          className="justify-content-center align-items-center"
+          onClick={this.unmuteRemoteSource}
+          style={{
+            display:
+              (!_.isUndefined(this.props.muteRemoteUserId[this.props.id]) &&
+                this.props.muteRemoteUserId[this.props.id] == "true") ||
+              this.state.remoteMuted == true
+                ? "flex"
+                : "none",
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(255,0,0,0.6)",
+            height: "100%",
+            width: "100%",
+            objectFit: "cover",
+            border: "2px solid #ACACAC",
+            borderRadius: "20px",
+            color: "white",
+            fontSize: "24px",
+            fontWeight: "semibold",
+          }}
+        >
+          MUTED
+        </div>
         <audio autoPlay="1" ref={this.micRef} />
         <div
           style={{
@@ -231,6 +315,7 @@ export class RemoteTrack extends Component {
         ) : null} */}
 
         <img
+          onClick={this.test}
           style={{
             position: "absolute",
             top: "5px",
@@ -245,6 +330,17 @@ export class RemoteTrack extends Component {
           alt="Mute"
           width="60px"
         />
+
+        {this.props.pushDown === true &&
+        this.props.pushedUser === this.props.id ? (
+          <div id="bars">
+            <div className="bar"></div>
+            <div className="bar"></div>
+            <div className="bar"></div>
+            <div className="bar"></div>
+            <div className="bar"></div>
+          </div>
+        ) : null}
 
         {/* {this.props.muteSource !== true ||
         (this.props.pushDown === true &&
